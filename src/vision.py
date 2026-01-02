@@ -5,8 +5,17 @@ from mediapipe.tasks.python import vision
 import numpy as np
 import os
 
+from utils import download_file
+
 class LipDetector:
     def __init__(self, model_path="models/face_landmarker.task"):
+        # Auto-download for Cloud deployment
+        download_file(
+            "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            model_path,
+            "Face Detection Model"
+        )
+        
         base_options = python.BaseOptions(model_asset_path=model_path)
         options = vision.FaceLandmarkerOptions(
             base_options=base_options,

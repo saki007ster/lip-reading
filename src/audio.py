@@ -3,17 +3,25 @@ import threading
 
 class TextToSpeech:
     def __init__(self):
-        self.engine = pyttsx3.init()
-        # On macOS, 'nsspeech' is often used. On Windows 'sapi5'.
-        # self.engine.setProperty('voice', ...) 
+        try:
+            self.engine = pyttsx3.init()
+        except Exception as e:
+            print(f"Warning: Could not initialize TTS engine: {e}")
+            self.engine = None
 
     def speak(self, text):
         """
         Speak the provided text. Runs in a separate thread to avoid blocking.
         """
+        if not self.engine:
+            return
+            
         def run():
-            self.engine.say(text)
-            self.engine.runAndWait()
+            try:
+                self.engine.say(text)
+                self.engine.runAndWait()
+            except Exception as e:
+                print(f"Warning: TTS speak failed: {e}")
         
         thread = threading.Thread(target=run)
         thread.start()
