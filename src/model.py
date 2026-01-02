@@ -13,46 +13,23 @@ auto_avsr_path = os.path.join(os.path.dirname(__file__), "auto_avsr")
 if auto_avsr_path not in sys.path:
     sys.path.insert(0, auto_avsr_path)
 
-print(f"DEBUG: sys.path[0]: {sys.path[0]}")
-print(f"DEBUG: Contents of {auto_avsr_path}: {os.listdir(auto_avsr_path) if os.path.exists(auto_avsr_path) else 'NOT FOUND'}")
-
-try:
-    from lightning import ModelModule
-    from datamodule.transforms import TextTransform
-    print("DEBUG: Successfully imported ModelModule and TextTransform")
-except Exception as e:
-    print(f"DEBUG: Import failed with error: {type(e).__name__}: {e}")
-    import traceback
-    traceback.print_exc()
-    ModelModule = None
-    TextTransform = None
-
 class LipReader:
     def __init__(self, model_path="models/auto_avsr_weights.pt"):
+        import torch # Lazy import
+        import gc
+        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model_path = model_path
         self.model_module = None
         
-        # Initialize TextTransform (using the imported one if available, otherwise the stub)
-        # The TextTransform from datamodule.transforms might have a different __init__
-        # For now, we'll assume the original TextTransform's __init__ signature is compatible
-        # or that the ModelModule handles it internally.
-        # If TextTransform is None due to ImportError, this will use the original stub logic.
-        if TextTransform:
-            # Assuming the imported TextTransform has a compatible constructor or default behavior
-            # The original TextTransform had sp_model_path and dict_path.
-            # The imported one might not need them or get them from args.
-            # For now, instantiate without args, assuming defaults or later setup.
-            self.text_transform = TextTransform() # This might need adjustment based on actual TextTransform from auto_avsr
-        else:
-            # Fallback to the original TextTransform's stub behavior if import failed
-            # This part is a placeholder if the imported TextTransform is not available
-            # and the original TextTransform's functionality is still needed.
-            # However, the user's instruction removed the original TextTransform class definition.
-            # So, if TextTransform is None, self.text_transform will remain uninitialized
-            # or will need a different stub.
-            # For now, let's assume if TextTransform is None, the predict method will handle it.
-            pass # self.text_transform will not be set if TextTransform is None
+        print("DEBUG: Lazy loading heavy model components...")
+        try:
+            from lightning import ModelModule
+            from datamodule.transforms import TextTransform
+        except Exception as e:
+            print(f"DEBUG: Import failed: {e}")
+            ModelModule = None
+            TextTransform = None
 
         if ModelModule and os.path.exists(model_path):
             try:
@@ -67,42 +44,35 @@ class LipReader:
                 args.max_epochs = 75
                 args.pretrained_model_path = model_path
                 
-                # Initialize ModelModule (architecture + loading weights)
-                # ModelModule.__init__ calls torch.load internally.
                 print("DEBUG: Initializing ModelModule (this may take a moment)...")
                 self.model_module = ModelModule(args)
-                
-                import gc
                 gc.collect()
                 
-                # Apply Dynamic Quantization for CPU (reduces 1GB -> ~250MB)
                 if self.device.type == "cpu":
-                    print("DEBUG: Applying dynamic quantization to reduce memory footprint...")
+                    print("DEBUG: Applying dynamic quantization...")
                     self.model_module = torch.quantization.quantize_dynamic(
                         self.model_module, {torch.nn.Linear}, dtype=torch.qint8
                     )
                     gc.collect()
                 
-                self.model_module.to(self.device)
-                self.model_module.eval()
-                print(f"Loaded Auto-AVSR model architecture and weights from {model_path}")
-
-                # If ModelModule was successfully loaded, it might have its own text_transform
-                if not hasattr(self, 'text_transform') or self.text_transform is None:
-                    if hasattr(self.model_module, 'text_transform'):
-                        self.text_transform = self.model_module.text_transform
-                    elif TextTransform: 
-                        self.text_transform = TextTransform()
-                    else:
-                        print("Warning: TextTransform not available. Post-processing might fail.")
-                        class DummyTextTransform:
-                            def post_process(self, token_ids):
-                                return f"Tokens: {token_ids.tolist()}"
-                        self.text_transform = DummyTextTransform()
+                self.model_module.to(self.device).eval()
+                
+                # Setup TextTransform
+                if hasattr(self.model_module, 'text_transform'):
+                    self.text_transform = self.model_module.text_transform
+                elif TextTransform:
+                    self.text_transform = TextTransform()
                 
                 gc.collect()
-
             except Exception as e:
+                print(f"Error loading model: {e}")
+                self.model_module = None
+        
+        # Ensure text_transform
+        if not hasattr(self, 'text_transform'):
+            class BasicTextTransform:
+                def post_process(self, token_ids): return f"Tokens: {token_ids.tolist()}"
+            self.text_transform = BasicTextTransform()
                 print(f"Error loading model architecture: {e}")
                 import traceback
                 traceback.print_exc()

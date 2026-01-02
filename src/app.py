@@ -2,7 +2,6 @@ import streamlit as st
 import cv2
 import numpy as np
 from vision import LipDetector
-from model import LipReader
 from audio import TextToSpeech
 import time
 
@@ -10,8 +9,17 @@ import time
 st.set_page_config(page_title="Lip Reading POC", layout="wide")
 
 # Sidebar info
-st.sidebar.header("Settings")
-stub_mode = st.sidebar.checkbox("Run in Stub Mode (Saves RAM)", value=False, help="Enable this if the app crashes on the cloud.")
+st.sidebar.header("⚙️ Settings")
+st.sidebar.info("Streamlit Cloud Free Tier has a **1GB RAM limit**. The full model is ~1GB.")
+
+# Set Safe Mode as default (True)
+model_mode = st.sidebar.selectbox(
+    "Model Selection",
+    ["Safe Mode (Stub - High Stability)", "Full Auto-AVSR (May Crash Cloud)"],
+    index=0,
+    help="Safe mode loads instantly. Full mode requires >1GB RAM."
+)
+stub_mode = (model_mode == "Safe Mode (Stub - High Stability)")
 
 st.title("👄 Lip Reading Communication Assistant")
 st.markdown("""
@@ -31,12 +39,17 @@ def get_detector():
 @st.cache_resource
 def get_reader(is_stub):
     if is_stub:
-        # Create a dummy reader that doesn't load weights
         class StubReader:
             def __init__(self): self.model = None
-            def predict(self, frames): return "Stub Mode Active"
+            def predict(self, frames): return "Safe Mode Active"
         return StubReader()
-    return LipReader()
+    
+    try:
+        from model import LipReader # Lazy import to save startup RAM
+        return LipReader()
+    except Exception as e:
+        st.error(f"Failed to load full model: {e}")
+        return None
 
 @st.cache_resource
 def get_tts():
