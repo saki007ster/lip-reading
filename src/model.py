@@ -25,7 +25,7 @@ class LipReader:
     def __init__(self, model_path="models/auto_avsr_weights.pt"):
         # Auto-download for Cloud deployment (1GB)
         download_file(
-            "http://www.doc.ic.ac.uk/~pm4115/autoAVSR/vsr_trlrs3_base.pth",
+            "https://huggingface.co/mpc001/auto_avsr/resolve/main/vsr_trlrs3_base.pth",
             model_path,
             "Auto-AVSR Weights (1GB)"
         )
