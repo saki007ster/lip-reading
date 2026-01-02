@@ -1,0 +1,14 @@
+opencv-python
+mediapipe
+streamlit
+pyttsx3
+numpy
+torch
+torchvision
+torchaudio
+av
+sentencepiece
+python-dotenv
+pytorch-lightning
+ffmpeg-python
+scikit-image

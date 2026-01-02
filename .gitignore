@@ -1,0 +1,27 @@
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python execution artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Model weights and assets (large files)
+models/
+
+# Sub-repository git data
+src/auto_avsr/.git
+
+# Streamlit
+.streamlit/
+
+# Local data / experiments
+data/
+exp/
