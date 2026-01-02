@@ -68,15 +68,20 @@ class LipReader:
                 args.pretrained_model_path = model_path
                 
                 # Initialize ModelModule (architecture + loading weights)
+                # ModelModule.__init__ calls torch.load internally.
+                print("DEBUG: Initializing ModelModule (this may take a moment)...")
                 self.model_module = ModelModule(args)
                 
+                import gc
+                gc.collect()
+                
                 # Apply Dynamic Quantization for CPU (reduces 1GB -> ~250MB)
-                # This only affects Linear and RNN layers by default, which is perfect for transformers.
                 if self.device.type == "cpu":
                     print("DEBUG: Applying dynamic quantization to reduce memory footprint...")
                     self.model_module = torch.quantization.quantize_dynamic(
                         self.model_module, {torch.nn.Linear}, dtype=torch.qint8
                     )
+                    gc.collect()
                 
                 self.model_module.to(self.device)
                 self.model_module.eval()
@@ -89,12 +94,13 @@ class LipReader:
                     elif TextTransform: 
                         self.text_transform = TextTransform()
                     else:
-                        # Fallback if no TextTransform is available at all
                         print("Warning: TextTransform not available. Post-processing might fail.")
                         class DummyTextTransform:
                             def post_process(self, token_ids):
                                 return f"Tokens: {token_ids.tolist()}"
                         self.text_transform = DummyTextTransform()
+                
+                gc.collect()
 
             except Exception as e:
                 print(f"Error loading model architecture: {e}")

@@ -9,6 +9,10 @@ import time
 # Page configuration
 st.set_page_config(page_title="Lip Reading POC", layout="wide")
 
+# Sidebar info
+st.sidebar.header("Settings")
+stub_mode = st.sidebar.checkbox("Run in Stub Mode (Saves RAM)", value=False, help="Enable this if the app crashes on the cloud.")
+
 st.title("👄 Lip Reading Communication Assistant")
 st.markdown("""
 This application captures your lip movements and converts them into speech. 
@@ -17,22 +21,34 @@ Move your lips clearly in front of the camera.
 
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 import queue
-
 import threading
+import av
 
-# Initialize components once in session_state
-if 'detector' not in st.session_state:
-    st.session_state.detector = LipDetector()
-if 'reader' not in st.session_state:
-    st.session_state.reader = LipReader()
-if 'tts' not in st.session_state:
-    st.session_state.tts = TextToSpeech()
+@st.cache_resource
+def get_detector():
+    return LipDetector()
+
+@st.cache_resource
+def get_reader(is_stub):
+    if is_stub:
+        # Create a dummy reader that doesn't load weights
+        class StubReader:
+            def __init__(self): self.model = None
+            def predict(self, frames): return "Stub Mode Active"
+        return StubReader()
+    return LipReader()
+
+@st.cache_resource
+def get_tts():
+    return TextToSpeech()
+
+detector = get_detector()
+reader = get_reader(stub_mode)
+tts = get_tts()
+
 if 'result_queue' not in st.session_state:
     st.session_state.result_queue = queue.Queue()
 
-detector = st.session_state.detector
-reader = st.session_state.reader
-tts = st.session_state.tts
 result_queue = st.session_state.result_queue
 
 # Background Inference Worker
@@ -63,7 +79,7 @@ if 'inference_thread' not in st.session_state:
 if reader.model is None:
     st.warning("**Current Model Status:** Using a **Simulated Stub**. Please ensure weights are in `models/`.")
 else:
-    st.success("**Model weights loaded!** Ready for real-time inference (Background Processing Active).")
+    st.success("**Model weights loaded!** Running optimized quantized engine.")
 
 # Layout: 2 columns for video feeds
 col1, col2 = st.columns(2)
@@ -78,18 +94,19 @@ st.subheader("Transcription")
 transcription_box = st.empty()
 
 # WebRTC Video Processor
-class LipReadingProcessor(VideoTransformerBase):
-    def __init__(self, input_queue):
+class LipReadingProcessor:
+    def __init__(self):
         self.frame_buffer = []
         self.frame_count = 0
         self.last_mouth_crop = None
-        self.input_queue = input_queue
+        # We'll get the queue from session_state later or pass it in
+        self.input_queue = None
         
         # Constants from implementation
         self.WINDOW_SIZE = 30
         self.STEP_SIZE = 15
 
-    def transform(self, frame):
+    def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
         
         try:
@@ -106,30 +123,30 @@ class LipReadingProcessor(VideoTransformerBase):
                 
                 # Inference trigger: Put a copy of the buffer into the background queue
                 if len(self.frame_buffer) == self.WINDOW_SIZE and self.frame_count % self.STEP_SIZE == 0:
-                    # We send a COPY of the buffer list to avoid mutation issues in the thread
-                    self.input_queue.put(list(self.frame_buffer))
+                    if st.session_state.input_queue:
+                        st.session_state.input_queue.put(list(self.frame_buffer))
                 
                 # Draw box on main frame
                 img = detector.draw_landmarks(img, box)
         except Exception as e:
             pass
 
-        return img
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # Streamer
 webrtc_ctx = webrtc_streamer(
     key="lip-reading",
     mode=WebRtcMode.SENDRECV,
-    video_transformer_factory=lambda: LipReadingProcessor(st.session_state.input_queue),
-    async_transform=True,
+    video_processor_factory=LipReadingProcessor,
+    async_processing=True,
     media_stream_constraints={"video": True, "audio": False},
 )
 
 # Handle Results and Display Aligned Mouth
-if webrtc_ctx.video_transformer:
+if webrtc_ctx.video_processor:
     # Display the latest aligned mouth crop in the side feed
-    if webrtc_ctx.video_transformer.last_mouth_crop is not None:
-        mouth_feed.image(webrtc_ctx.video_transformer.last_mouth_crop, channels="BGR", width="stretch")
+    if webrtc_ctx.video_processor.last_mouth_crop is not None:
+        mouth_feed.image(webrtc_ctx.video_processor.last_mouth_crop, channels="BGR", width="stretch")
     
     # Check for new transcriptions from the background thread
     try:
