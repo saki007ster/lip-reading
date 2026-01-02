@@ -69,20 +69,24 @@ class LipReader:
                 
                 # Initialize ModelModule (architecture + loading weights)
                 self.model_module = ModelModule(args)
+                
+                # Apply Dynamic Quantization for CPU (reduces 1GB -> ~250MB)
+                # This only affects Linear and RNN layers by default, which is perfect for transformers.
+                if self.device.type == "cpu":
+                    print("DEBUG: Applying dynamic quantization to reduce memory footprint...")
+                    self.model_module = torch.quantization.quantize_dynamic(
+                        self.model_module, {torch.nn.Linear}, dtype=torch.qint8
+                    )
+                
                 self.model_module.to(self.device)
                 self.model_module.eval()
                 print(f"Loaded Auto-AVSR model architecture and weights from {model_path}")
 
                 # If ModelModule was successfully loaded, it might have its own text_transform
-                # or we can ensure self.text_transform is properly initialized here.
-                # Assuming ModelModule handles text transformation or the imported TextTransform is sufficient.
                 if not hasattr(self, 'text_transform') or self.text_transform is None:
-                    # If TextTransform was not initialized above (e.g., if TextTransform was None),
-                    # try to get it from the model or instantiate a default one.
-                    # This is a heuristic; actual implementation might vary based on ModelModule.
                     if hasattr(self.model_module, 'text_transform'):
                         self.text_transform = self.model_module.text_transform
-                    elif TextTransform: # If TextTransform class is available but not instantiated yet
+                    elif TextTransform: 
                         self.text_transform = TextTransform()
                     else:
                         # Fallback if no TextTransform is available at all
