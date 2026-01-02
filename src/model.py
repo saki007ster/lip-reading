@@ -8,28 +8,8 @@ import sentencepiece
 import sys
 import argparse
 
-# Add Auto-AVSR repository to sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "auto_avsr"))
-
-from utils import download_file
-
-try:
-    from lightning import ModelModule
-    from datamodule.transforms import TextTransform
-except ImportError:
-    # Fallback/stub if not found
-    ModelModule = None
-    TextTransform = None
-
 class LipReader:
     def __init__(self, model_path="models/auto_avsr_weights.pt"):
-        # Auto-download for Cloud deployment (1GB)
-        download_file(
-            "https://huggingface.co/mpc001/auto_avsr/resolve/main/vsr_trlrs3_base.pth",
-            model_path,
-            "Auto-AVSR Weights (1GB)"
-        )
-
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model_path = model_path
         self.model_module = None

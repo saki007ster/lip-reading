@@ -14,7 +14,7 @@ __pycache__/
 Thumbs.db
 
 # Model weights and assets (large files)
-models/
+# models/
 
 # Sub-repository git data
 src/auto_avsr/.git

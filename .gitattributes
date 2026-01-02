@@ -1,0 +1,4 @@
+# Track large model weights with Git LFS
+models/*.pt filter=lfs diff=lfs merge=lfs -text
+models/*.pth filter=lfs diff=lfs merge=lfs -text
+models/*.task filter=lfs diff=lfs merge=lfs -text
