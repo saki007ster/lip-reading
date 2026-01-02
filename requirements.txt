@@ -12,3 +12,4 @@ python-dotenv
 pytorch-lightning
 ffmpeg-python
 scikit-image
+streamlit-webrtc
