@@ -8,6 +8,25 @@ import sentencepiece
 import sys
 import argparse
 
+# Add Auto-AVSR repository to sys.path
+auto_avsr_path = os.path.join(os.path.dirname(__file__), "auto_avsr")
+if auto_avsr_path not in sys.path:
+    sys.path.insert(0, auto_avsr_path)
+
+print(f"DEBUG: sys.path[0]: {sys.path[0]}")
+print(f"DEBUG: Contents of {auto_avsr_path}: {os.listdir(auto_avsr_path) if os.path.exists(auto_avsr_path) else 'NOT FOUND'}")
+
+try:
+    from lightning import ModelModule
+    from datamodule.transforms import TextTransform
+    print("DEBUG: Successfully imported ModelModule and TextTransform")
+except Exception as e:
+    print(f"DEBUG: Import failed with error: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+    ModelModule = None
+    TextTransform = None
+
 class LipReader:
     def __init__(self, model_path="models/auto_avsr_weights.pt"):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
