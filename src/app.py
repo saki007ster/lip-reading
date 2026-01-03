@@ -209,25 +209,25 @@ with col_main:
         async_processing=True,
         media_stream_constraints={"video": True, "audio": False},
     )
-    st.markdown("</div>", unsafe_content_allowed=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_side:
-    st.markdown("<div class='glass-card'>", unsafe_content_allowed=True)
-    st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>MOUTH FOCUS</p>", unsafe_content_allowed=True)
+    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>MOUTH FOCUS</p>", unsafe_allow_html=True)
     mouth_feed = st.empty()
-    st.markdown("</div>", unsafe_content_allowed=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<div class='glass-card'>", unsafe_content_allowed=True)
-    st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>STABILITY STATUS</p>", unsafe_content_allowed=True)
+    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>STABILITY STATUS</p>", unsafe_allow_html=True)
     if stub_mode:
         st.warning("Simulator Mode")
     else:
         st.success("AI Model Active")
-    st.markdown("</div>", unsafe_content_allowed=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Transcription Centerpiece
-st.markdown("<div class='glass-card'>", unsafe_content_allowed=True)
-st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>AI TRANSCRIPTION</p>", unsafe_content_allowed=True)
+st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+st.markdown("<p style='font-weight: 600; font-size: 0.9rem; color: rgba(255,255,255,0.5);'>AI TRANSCRIPTION</p>", unsafe_allow_html=True)
 transcription_area = st.empty()
 
 # Handle Results
@@ -243,5 +243,5 @@ if webrtc_ctx.video_processor:
     except: pass
 
 last_text = st.session_state.get('last_text', "Ready to translate your lips...")
-transcription_area.markdown(f"<div class='transcription-area'>{last_text}</div>", unsafe_content_allowed=True)
-st.markdown("</div>", unsafe_content_allowed=True)
+transcription_area.markdown(f"<div class='transcription-area'>{last_text}</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
