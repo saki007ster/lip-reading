@@ -81,11 +81,11 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
     }
 </style>
-""", unsafe_content_allowed=True)
+""", unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("<h2 style='color: #ff007a;'>LipSync AI</h2>", unsafe_content_allowed=True)
+    st.markdown("<h2 style='color: #ff007a;'>LipSync AI</h2>", unsafe_allow_html=True)
     st.sidebar.info("Streamlit Cloud Free Tier has a **1GB RAM limit**. The full model is ~1GB.")
     
     st.markdown("### ⚙️ Engine Settings")
@@ -102,8 +102,8 @@ with st.sidebar:
     st.write("1. Allow camera access\n2. Click **Start** button\n3. Speak clearly to the camera")
 
 # Header section
-st.markdown("<h1 class='main-title'>LipSync AI Assistant</h1>", unsafe_content_allowed=True)
-st.markdown("<p style='color: rgba(255,255,255,0.6); font-size: 1.1rem;'>Real-time AI-powered communication from lip movement</p>", unsafe_content_allowed=True)
+st.markdown("<h1 class='main-title'>LipSync AI Assistant</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color: rgba(255,255,255,0.6); font-size: 1.1rem;'>Real-time AI-powered communication from lip movement</p>", unsafe_allow_html=True)
 
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 import queue
@@ -168,13 +168,13 @@ if 'inference_thread' not in st.session_state:
 col_main, col_side = st.columns([2, 1])
 
 with col_main:
-    st.markdown("<div class='glass-card'>", unsafe_content_allowed=True)
+    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("""
         <div class='pulse-container'>
             <div class='pulse'></div>
             <span style='color: #ff007a; font-weight: 600;'>LIVE FEED ACTIVE</span>
         </div>
-    """, unsafe_content_allowed=True)
+    """, unsafe_allow_html=True)
     
     # WebRTC Video Processor
     class LipReadingProcessor:
